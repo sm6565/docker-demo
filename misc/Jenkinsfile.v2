@@ -22,7 +22,28 @@ node {
           sh 'npm test'                     
      }                                   
      mysql.stop()
-   }                                     
+   stage('Scan') {
+            steps {
+                // Scan the image
+                prismaCloudScanImage ca: '',
+                cert: '',
+                dockerAddress: 'unix:///var/run/docker.sock',
+                image: 'test/test-image*',
+                key: '',
+                logLevel: 'info',
+                podmanPath: '',
+                project: '',
+                resultsFile: 'prisma-cloud-scan-results.json',
+                ignoreImageBuildTime:true
+            }
+        }
+    }
+    post {
+        always {
+            // The post section lets you run the publish step regardless of the scan results
+            prismaCloudPublish resultsFilePattern: 'prisma-cloud-scan-results.json'
+        }
+   } 
    stage('docker build/push') {            
      docker.withRegistry('https://index.docker.io/v2/', 'dockerhub') {
        def app = docker.build("omg65/meralco:${commit_id}", '.').push()
